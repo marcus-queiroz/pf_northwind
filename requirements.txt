@@ -1,0 +1,26 @@
+# =============================================================================
+# Requirements - pf_northwind
+# =============================================================================
+
+# Spark + Delta Lake
+pyspark==3.5.0
+delta-spark==3.0.0
+
+# DuckDB + PyArrow
+duckdb==0.10.0
+pyarrow>=14.0.0
+
+# Data processing
+pandas>=2.0.0
+
+# SQL Server connectivity
+pymssql>=2.2.0
+pyodbc>=5.0.0
+
+# Jupyter
+jupyter>=1.0.0
+notebook>=7.0.0
+jupyterlab>=4.0.0
+
+# Utilities
+python-dotenv>=1.0.0

@@ -1,0 +1,17 @@
+# Ferramentas internas
+.tools/
+
+# DuckDB runtime
+duckdb/*.duckdb
+duckdb/*.duckdb.wal
+
+# Spark runtime
+spark_sql/warehouse/
+spark_sql/.ipynb_checkpoints/
+
+# Jupyter checkpoints
+**/.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc

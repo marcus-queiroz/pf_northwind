@@ -1,0 +1,107 @@
+# =============================================================================
+# Docker Compose — pf_northwind
+# =============================================================================
+#
+# Serviços:
+#   spark      — Spark + Delta Lake + DuckDB + Jupyter Lab  (sempre ativo)
+#   sqlserver  — SQL Server 2022                            (profile: sqlserver)
+#
+# Uso (execute a partir de qualquer pasta):
+#
+#   # Apenas Spark/DuckDB:
+#   docker compose -f docker/docker-compose.yml up -d
+#
+#   # Spark/DuckDB + SQL Server:
+#   docker compose -f docker/docker-compose.yml --profile sqlserver up -d
+#
+#   # Parar tudo:
+#   docker compose -f docker/docker-compose.yml --profile sqlserver down
+#
+# Acesso:
+#   Jupyter Lab  → http://localhost:8890  (sem senha)
+#   Spark UI     → http://localhost:4042  (disponível após iniciar um job)
+#   SQL Server   → localhost:1434  (usuário: sa, senha: ver docker/.env)
+#                  (porta 1434 para não conflitar com course_eng_ref que usa 1433)
+#
+# Primeira execução: ajuste SA_PASSWORD em docker/.env  (copie de .env.example)
+#
+# =============================================================================
+
+services:
+
+  # ===========================================================================
+  # Spark + Delta Lake + DuckDB + Jupyter Lab
+  # ===========================================================================
+  spark:
+    build:
+      context: ..                        # contexto = pf_northwind/
+      dockerfile: docker/Dockerfile
+    image: pf-northwind-spark
+    container_name: pf-northwind-spark
+    hostname: pf-northwind
+    ports:
+      - "4042:4040"   # Spark UI (4042 no host para evitar conflito com outros containers Spark)
+      - "8890:8888"   # Jupyter Lab (8890 no host — course_eng_ref ocupa 8888/8889)
+    volumes:
+      - ..:/workspace/pf_northwind       # monta pf_northwind/ inteiro no container
+    environment:
+      - SPARK_DRIVER_MEMORY=2g
+      - SPARK_EXECUTOR_MEMORY=2g
+      - PYTHONUNBUFFERED=1
+      # Conexão SQL Server (usada apenas se o container sqlserver estiver ativo)
+      - SQL_SERVER=pf-northwind-sql
+      - SQL_PORT=1433
+      - SQL_USER=sa
+      - SQL_PASSWORD=${SA_PASSWORD:-YourPassword123}
+      - SQL_DATABASE=NorthwindDW
+    working_dir: /workspace/pf_northwind
+    restart: unless-stopped
+    networks:
+      - northwind_net
+
+  # ===========================================================================
+  # Microsoft SQL Server 2022
+  # Ativado com: --profile sqlserver
+  # ===========================================================================
+  sqlserver:
+    profiles: ["sqlserver"]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: pf-northwind-sql
+    hostname: pf-northwind-sql
+    user: "0:0"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD:-YourPassword123}
+      - MSSQL_PID=Developer
+    ports:
+      - "1434:1433"   # 1434 no host para não conflitar com course_eng_ref (1433)
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ../sql_server:/scripts:ro        # scripts SQL disponíveis em /scripts no container
+    healthcheck:
+      test: >
+        /opt/mssql-tools18/bin/sqlcmd
+        -S localhost -U sa -P "${SA_PASSWORD:-YourPassword123}"
+        -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - northwind_net
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  sqlserver_data:
+    name: pf_northwind_sqlserver_data
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  northwind_net:
+    name: northwind_net
+    driver: bridge

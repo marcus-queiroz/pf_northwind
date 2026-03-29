@@ -1,0 +1,28 @@
+# DuckDB runtime
+duckdb/*.duckdb
+duckdb/*.duckdb.wal
+
+# Spark runtime
+spark_sql/warehouse/
+spark_sql/metastore_db/
+
+# Jupyter checkpoints
+**/.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Teoria (não necessária no container)
+teoria/
+
+# Git
+.git/
+.gitignore
+
+# Ferramentas internas
+.tools/
+
+# Docker (evita loop de cópia)
+docker/
