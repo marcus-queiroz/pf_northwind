@@ -198,16 +198,5 @@ FROM bronze.categories;
 
 ---
 
-## 6. Questões de Revisão
-
-1. Qual a diferença entre SCD Tipo 1 e Tipo 2? Quando você escolheria cada um?
-2. Por que usar surrogate key em vez da chave natural do OLTP?
-3. No DimEmployee, por que achatar a hierarquia em vez de expor o campo `ReportsTo`?
-4. O que acontece com um registro de DimEmployee se o funcionário muda de cidade e você
-   re-executa `sp_process_dims`? E se fosse SCD2?
-5. Por que DimDate é gerada por série em vez de extraída do OLTP?
-
----
-
 **Sessão anterior:** [T01 — Bronze: Ingestão Full Load](T01_bronze_ingestion.md)
 **Próxima sessão:** [T03 — Silver: Dimensões SCD Tipo 2](T03_scd2.md)

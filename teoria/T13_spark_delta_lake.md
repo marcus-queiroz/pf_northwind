@@ -248,15 +248,6 @@ spark.sql("OPTIMIZE gold.fact_sales ZORDER BY (CustomerSK, OrderDate)")
 | SK SCD2 idêntico entre versões | Hash só da NK → dois registros do mesmo cliente com mesmo SK | Incluir `ValidFrom` no hash para SCD2 |
 | MERGE sem `alias` causa erro | `delta_tgt.merge(source, condition)` precisa de `.alias()` em ambos os lados | Sempre fazer `.alias("tgt")` e `.alias("src")` |
 
----
-
-## 6. Questões de Revisão
-
-1. Qual o problema que o Delta Lake resolve em relação ao Parquet puro? Cite dois cenários concretos.
-2. Por que `saveAsTable("gold.dim_customer")` é preferível a `save("warehouse/gold.db/dim_customer")`?
-3. No projeto, SCD1 usa `hash(NK)` e SCD2 usa `hash(NK, ValidFrom)`. Por quê a diferença?
-4. O que acontece se você rodar `mode("overwrite")` em uma tabela Delta que já tem dados? E se você rodar `mode("append")`?
-5. Você leu um CSV de employees com `inferSchema=True` e sem `multiLine=True`. Como saberia que algo deu errado antes de tentar o MERGE?
 
 ---
 

@@ -196,15 +196,5 @@ conn.execute(f"""
 
 ---
 
-## 6. Questões de Revisão
-
-1. Um cliente mudou de cidade em 2020. Como recuperar a cidade dele no momento de um pedido feito em 2019? E em 2021?
-2. Por que a carga inicial usa `ValidFrom='1900-01-01'` e não `GETDATE()`?
-3. Qual a diferença prática entre filtrar por `IsCurrent=1` vs. filtrar por range de datas?
-4. DimProduct denormaliza `CategoryName`. Que problema isso cria se uma categoria muda de nome? Como o SCD2 lida com isso?
-5. No Spark, por que o SK de SCD2 inclui `ValidFrom` no hash, diferente do SCD1?
-
----
-
 **Sessão anterior:** [T02 — Silver: SCD Tipo 1](T02_scd1.md)
 **Próxima sessão:** [T04 — Gold: Fato Transacional](T04_fato_transacional.md)

@@ -73,9 +73,3 @@ Criar cópias da dimensão:
 - `RequiredDateKey` → `v_RequiredDate` (prazo prometido ao cliente)
 - `ShippedDateKey` → `v_ShippedDate` (quando realmente saiu — pode ser NULL)
 
-## Perguntas de revisão
-
-1. Por que views são a solução correta para role-playing, não cópias da tabela?
-2. Por que ShippedDate exige LEFT JOIN mas OrderDate não?
-3. Cite dois exemplos de role-playing dimension além de DimDate.
-4. Como o conceito de role-playing se relaciona com o princípio DRY (Don't Repeat Yourself)?

@@ -93,9 +93,4 @@ Não use quando:
 
 3. **Atualização de combinações**: Se o domínio dos atributos muda (novo `DiscountBand`), a dimensão precisa ser atualizada antes de novos fatos chegarem.
 
-## Perguntas de revisão
 
-1. Por que o nome "junk" não implica má qualidade?
-2. Qual é a diferença entre pré-geração e geração dinâmica de combinações?
-3. Em que situação você deixaria um atributo booleano diretamente no fato em vez de criar Junk Dimension?
-4. Por que `ShipmentMode` neste portfólio é considerado dado sintético?

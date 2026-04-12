@@ -210,15 +210,5 @@ WHERE NOT EXISTS (
 
 ---
 
-## 6. Questões de Revisão
-
-1. Qual o grain do FactSales? Por que não usar `OrderID` como grain?
-2. Qual a diferença entre GrossRevenue e NetRevenue? Como cada um é calculado?
-3. Por que o JOIN com DimProduct usa range de datas em vez de `IsCurrent = 1`?
-4. `Discount` é uma métrica aditiva? Como analisá-la corretamente?
-5. FactSales tem 2.200 linhas após o processamento (deveria ter 2.155). O que pode ter dado errado?
-
----
-
 **Sessão anterior:** [T03 — Silver: SCD Tipo 2](T03_scd2.md)
 **Próxima sessão:** [T05 — Gold: Accumulating Snapshot](T05_accumulating_snapshot.md)

@@ -211,15 +211,5 @@ conn.execute("""
 
 ---
 
-## 6. Questões de Revisão
-
-1. Qual a diferença fundamental entre Fato Transacional e Accumulating Snapshot?
-2. Por que FactOrderFulfillment tem 1 linha por pedido e não 1 por item de pedido?
-3. O que acontece com a linha de um pedido pendente quando `ShippedDate` é preenchida? Qual operação SQL executa essa atualização?
-4. Se você rodar `sp_process_fact_fulfillment` 5 vezes seguidas sem mudar os dados, quantas linhas a mais serão inseridas?
-5. Como calcular o percentual de pedidos entregues com atraso por shipper?
-
----
-
 **Sessão anterior:** [T04 — Gold: Fato Transacional](T04_fato_transacional.md)
 **Próxima sessão:** [T06 — Gold: Periodic Snapshot](T06_periodic_snapshot.md)

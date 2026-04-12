@@ -250,15 +250,6 @@ GROUP BY ProductID;
 
 > **Contexto do projeto:** os três stacks (SQL Server, Spark, DuckDB) implementam o **mesmo modelo dimensional** com o **mesmo dataset**. DuckDB se destaca pela simplicidade: sem configuração de servidor, sem JVM, sem Delta transaction log — apenas SQL analítico rápido em um arquivo portátil.
 
----
-
-## 7. Questões de Revisão
-
-1. Por que DuckDB é chamado de banco "analítico embarcado"? O que diferencia de SQLite?
-2. O que `QUALIFY ROW_NUMBER() OVER (...) = 1` faz que uma subquery tradicional também faz? Qual a vantagem?
-3. Por que `INSERT OR REPLACE INTO` requer `UNIQUE` apenas na natural key, não no surrogate key?
-4. `hash(CustomerID) % 2147483647` é determinístico: sempre gera o mesmo SK para o mesmo CustomerID. Qual seria o problema se não fosse determinístico?
-5. Em que situação você escolheria DuckDB em vez de Spark para um pipeline de DW?
 
 ---
 

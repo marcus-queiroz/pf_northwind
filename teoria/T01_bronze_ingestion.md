@@ -160,15 +160,4 @@ conn.execute("""
 
 ---
 
-## 6. Questões de Revisão
-
-1. Por que a camada Bronze não deve ter transformações de negócio?
-2. Qual a diferença entre Full Load e Incremental Load? Quando cada um é adequado?
-3. No Northwind, por que `[Order Details]` foi renomeado para `OrderDetails` no Bronze?
-4. O que acontece se você rodar `sp_ingest_bronze` duas vezes seguidas? O resultado é o mesmo?
-5. Por que `TRUNCATE` é preferível a `DELETE` na carga Full Load?
-6. Se a fonte OLTP tivesse 10 milhões de linhas, você ainda usaria Full Load? O que mudaria?
-
----
-
 **Próxima sessão:** [T02 — Silver: Dimensões SCD Tipo 1](T02_scd1.md)

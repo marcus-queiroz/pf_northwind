@@ -96,9 +96,4 @@ SELECT CustomerID, City, ValidFrom, ValidTo, IsCurrent FROM silver.DimCustomer;
 - `silver.DimCustomer`: SCD2 completo com histórico de `ContactName` e `City`
 - `silver.DimCustomerSCD3`: SCD3 com apenas `CurrentCity`/`PreviousCity`
 
-## Perguntas de revisão
 
-1. Se um cliente muda de cidade três vezes, o que cada padrão (SCD1, SCD2, SCD3) registra?
-2. Por que SCD3 não exige filtro `IsCurrent` nas queries?
-3. Em que cenário SCD3 é preferível a SCD2, mesmo perdendo histórico completo?
-4. Como a procedure de atualização SCD3 previne sobrescrever `PreviousCity` com `NULL`?

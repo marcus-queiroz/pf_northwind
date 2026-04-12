@@ -219,16 +219,6 @@ else:
 
 ---
 
-## 6. Questões de Revisão
-
-1. Qual a diferença entre Periodic Snapshot e Accumulating Snapshot?
-2. Por que Periodic Snapshot é append-only? O que aconteceria se atualizássemos as linhas em vez de inserir novas?
-3. Como garantir que rodar a procedure duas vezes no mesmo dia não gera duplicatas?
-4. Para saber quais produtos precisavam de reposição há 30 dias, como você faria a query?
-5. O grain é `(ProductID, SnapshotDateKey)`. O que aconteceria se dois produtos diferentes tivessem o mesmo `ProductSK` (erro de geração de SK)? Como detectar esse problema?
-
----
-
 **Sessão anterior:** [T05 — Gold: Accumulating Snapshot](T05_accumulating_snapshot.md)
 
 ---

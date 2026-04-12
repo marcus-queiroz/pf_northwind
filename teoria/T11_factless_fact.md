@@ -80,9 +80,4 @@ O `COUNT(*)` aqui *não* é uma métrica do fato — é contagem de eventos.
 
 4. **Perguntar "mas onde estão as métricas?"**: A ausência de métricas é a característica, não um bug. Resistir à tentação de adicionar `OrderCount` ou similares — se você precisa de métricas, é um fato transacional.
 
-## Perguntas de revisão
 
-1. Qual é a diferença entre Factless Fact tipo Evento e tipo Cobertura?
-2. Por que a query "o que NÃO aconteceu?" é difícil com fatos transacionais normais?
-3. Como `COUNT(*)` em uma Factless Fact difere de uma métrica no fato?
-4. Por que `NOT EXISTS` sobre uma Factless Fact é mais eficiente que uma solução alternativa sem ela?

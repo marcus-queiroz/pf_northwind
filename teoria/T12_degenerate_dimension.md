@@ -88,13 +88,6 @@ Sem essa documentação, um desenvolvedor pode questionar "por que não tem DimO
 
 Se existe uma tabela de dimensão para o campo, é FK, não DD. Se não existe (e não deveria existir), é DD.
 
-## Perguntas de revisão
-
-1. Qual é a diferença entre uma Degenerate Dimension e uma FK para uma dimensão?
-2. Por que o `OrderID` em `FactSales` é considerado DD enquanto o pedido inteiro está em `FactOrderFulfillment`?
-3. O que é "drill-through" e como a DD o habilita?
-4. Por que documentar explicitamente uma DD é importante para manutenção do DW?
-
 ---
 
 **Sessão anterior:** [T11 — Factless Fact](T11_factless_fact.md)

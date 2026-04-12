@@ -85,9 +85,3 @@ ORDER BY Receita DESC;
 
 3. **Confundir bridge com tabela de fato**: A bridge não tem métricas. É puramente estrutural.
 
-## Perguntas de revisão
-
-1. Por que STRING_AGG em DimEmployee é inadequado para análise territorial?
-2. Quando é necessário usar WeightFactor na bridge?
-3. Qual é o grain correto de uma Bridge Table Employee-Territory?
-4. Como a Bridge Table habilita a query "quais territórios nunca geraram pedidos"?
