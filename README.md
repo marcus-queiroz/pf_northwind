@@ -8,11 +8,17 @@ Os notebooks de Spark e DuckDB estão versionados **com os outputs das últimas 
 
 ## O que está entregue
 
-**Trilha SQL Server** (`sql_server/`) — T-SQL nativo, do banco fonte ao modelo dimensional:
+**Trilha SQL Server** (`sql_server/`) — T-SQL nativo, do banco fonte ao modelo dimensional, em três portas na raiz:
 
 ```
 00_create_northwind_source.sql  cria e popula o banco Northwind (fonte OLTP)
 01_setup.sql                    cria o banco NorthwindDW: schemas, tabelas e views
+02_build_and_load.sql           gerado — roda o pipeline inteiro, do bronze ao gold
+```
+
+**`construcao/`** — a fonte: as procedures do modelo gold, uma por arquivo (`02_build_and_load.sql` é gerado a partir daqui):
+
+```
 02_bronze_ingest.sql            procedure de ingestão para a camada bronze
 03_gold_dims.sql                dimensões SCD1 + DimDate
 04_gold_scd2.sql                DimCustomer e DimProduct com histórico (SCD2)
@@ -25,15 +31,15 @@ Os notebooks de Spark e DuckDB estão versionados **com os outputs das últimas 
 13_factless_fact.sql            FactEmployeeTerritoryActivity — fato sem métrica
 ```
 
-**Demonstrações** — não constroem nada, servem para explorar o que foi construído:
+**`demonstracoes/`** — não constroem nada, servem para explorar o que foi construído:
 
 ```
 08_analytics.sql                10 queries analíticas com framing de negócio
-09_validation.sql               20 verificações de integridade do modelo
+09_validation.sql               24 verificações de integridade do modelo
 14_role_playing.sql             views role-playing + degenerate dimension
 ```
 
-**Labs** — versões didáticas de `02` a `07`, com o passo a passo comentado e as consultas intermediárias que mostram o antes e o depois de cada transformação:
+**`labs/`** — versões didáticas de `02` a `07`, com o passo a passo comentado e as consultas intermediárias que mostram o antes e o depois de cada transformação:
 
 ```
 02_bronze_ingest_lab.sql   03_gold_dims_lab.sql   04_gold_scd2_lab.sql
@@ -48,33 +54,17 @@ Os notebooks de Spark e DuckDB estão versionados **com os outputs das últimas 
 
 Pré-requisito: um SQL Server 2017 ou superior e um cliente para rodar os scripts — [SSMS](https://aka.ms/ssmsfullsetup) ou [Azure Data Studio](https://aka.ms/azuredatastudio), ambos gratuitos. Se você não tem um SQL Server à mão, o projeto fornece um pronto via Docker (ver [Ambiente](#ambiente), no fim).
 
-**1. Criar as estruturas e as procedures**
+Três portas na raiz de `sql_server/`, nesta ordem:
 
-Abra e execute, nesta ordem: `00_create_northwind_source.sql`, `01_setup.sql`, depois `02` a `07`, e por fim `10`, `12` e `13`. Cada arquivo cria as estruturas e a procedure da sua etapa.
+**1. `00_create_northwind_source.sql`** — cria e popula o banco Northwind (fonte OLTP). Seguro rodar de novo.
 
-**2. Executar o pipeline**
+**2. `01_setup.sql`** — cria o banco `NorthwindDW`. **Destrutivo:** começa com `DROP DATABASE NorthwindDW`.
 
-Abra e execute `run_pipeline.sql` — ele chama todas as procedures na ordem correta e termina com a contagem de linhas por tabela e duas consultas de resultado.
+**3. `02_build_and_load.sql`** — roda o pipeline inteiro, do bronze ao gold, e termina com a contagem de linhas por tabela. Idempotente: rodar de novo recria e recarrega a partir da fonte. É gerado a partir de `sql_server/construcao/` — para mudar uma procedure, edite lá.
 
-**3. Popular a Junk Dimension**
+**Explorar** — abra `sql_server/demonstracoes/08_analytics.sql`, `09_validation.sql` e `14_role_playing.sql` para ver o modelo respondendo perguntas de negócio e passando nas verificações de integridade.
 
-Execute `11_junk_dimension.sql`. Ele não usa procedure e precisa rodar **depois** do passo 2: atualiza `FactSales`, que só existe a partir dali. Rodado antes, atualiza zero linhas sem apresentar erro.
-
-**4. Explorar**
-
-Abra `08_analytics.sql`, `09_validation.sql` e `14_role_playing.sql` para ver o modelo respondendo perguntas de negócio e passando nas verificações de integridade.
-
-### Atalho: executor Python
-
-Se preferir não rodar os arquivos um a um, `run_pipeline.py` faz os passos 1 a 3 em um comando:
-
-| Sua situação | Comando |
-|---|---|
-| Subiu o SQL Server deste projeto via Docker | `python sql_server/run_pipeline.py` |
-| SQL Server próprio | `python sql_server/run_pipeline.py --port 1433 --password SuaSenha` |
-| De dentro do Jupyter Lab do projeto | `python sql_server/run_pipeline.py` |
-
-Requer `pip install pymssql`. Flags, variáveis de ambiente, modo de simulação e o que o executor deliberadamente **não** roda estão em **[`sql_server/README.md`](sql_server/README.md)**.
+Por que os números de `construcao/` não seguem a ordem de execução do pipeline, a distinção entre arquivo que define procedure e arquivo que executa direto, e como regenerar `02_build_and_load.sql` — tudo isso está em **[`sql_server/README.md`](sql_server/README.md)**.
 
 ---
 
@@ -84,17 +74,17 @@ Cada padrão aparece nas três tecnologias sob o mesmo número, ao lado do texto
 
 | Padrão | Teoria | SQL Server | Spark | DuckDB |
 |---|---|---|---|---|
-| Ingestão bronze | T01 | `02_bronze_ingest.sql` | `02_bronze_ingest.ipynb` | `02_bronze_ingest.ipynb` |
-| SCD Tipo 1 | T02 | `03_gold_dims.sql` | `03_gold_dims.ipynb` | `03_gold_dims.ipynb` |
-| SCD Tipo 2 | T03 | `04_gold_scd2.sql` | `04_gold_scd2.ipynb` | `04_gold_scd2.ipynb` |
-| Fato transacional | T04 | `05_gold_fact_sales.sql` | `05_gold_fact_sales.ipynb` | `05_gold_fact_sales.ipynb` |
-| Accumulating snapshot | T05 | `06_gold_fact_fulfillment.sql` | `06_gold_fact_fulfillment.ipynb` | `06_gold_fact_fulfillment.ipynb` |
-| Periodic snapshot | T06 | `07_gold_fact_stock.sql` | `07_gold_fact_stock.ipynb` | `07_gold_fact_stock.ipynb` |
-| Bridge table (M:N) | T07 | `10_bridge_table.sql` | `10_bridge_table.ipynb` | `10_bridge_table.ipynb` |
-| Junk dimension | T09 | `11_junk_dimension.sql` | `11_junk_dimension.ipynb` | `11_junk_dimension.ipynb` |
-| SCD Tipo 3 | T10 | `12_scd3.sql` | `12_scd3.ipynb` | `12_scd3.ipynb` |
-| Factless fact | T11 | `13_factless_fact.sql` | `13_factless_fact.ipynb` | `13_factless_fact.ipynb` |
-| Role-playing + degenerate | T08, T12 | `14_role_playing.sql` | `14_role_playing.ipynb` | `14_role_playing.ipynb` |
+| Ingestão bronze | T01 | `construcao/02_bronze_ingest.sql` | `02_bronze_ingest.ipynb` | `02_bronze_ingest.ipynb` |
+| SCD Tipo 1 | T02 | `construcao/03_gold_dims.sql` | `03_gold_dims.ipynb` | `03_gold_dims.ipynb` |
+| SCD Tipo 2 | T03 | `construcao/04_gold_scd2.sql` | `04_gold_scd2.ipynb` | `04_gold_scd2.ipynb` |
+| Fato transacional | T04 | `construcao/05_gold_fact_sales.sql` | `05_gold_fact_sales.ipynb` | `05_gold_fact_sales.ipynb` |
+| Accumulating snapshot | T05 | `construcao/06_gold_fact_fulfillment.sql` | `06_gold_fact_fulfillment.ipynb` | `06_gold_fact_fulfillment.ipynb` |
+| Periodic snapshot | T06 | `construcao/07_gold_fact_stock.sql` | `07_gold_fact_stock.ipynb` | `07_gold_fact_stock.ipynb` |
+| Bridge table (M:N) | T07 | `construcao/10_bridge_table.sql` | `10_bridge_table.ipynb` | `10_bridge_table.ipynb` |
+| Junk dimension | T09 | `construcao/11_junk_dimension.sql` | `11_junk_dimension.ipynb` | `11_junk_dimension.ipynb` |
+| SCD Tipo 3 | T10 | `construcao/12_scd3.sql` | `12_scd3.ipynb` | `12_scd3.ipynb` |
+| Factless fact | T11 | `construcao/13_factless_fact.sql` | `13_factless_fact.ipynb` | `13_factless_fact.ipynb` |
+| Role-playing + degenerate | T08, T12 | `demonstracoes/14_role_playing.sql` | `14_role_playing.ipynb` | `14_role_playing.ipynb` |
 | Recursos do Delta Lake | T13 | — | `15_delta_features.ipynb` | — |
 
 O paralelo é o ponto: o mesmo SCD2 escrito com `MERGE` em T-SQL, com a API Delta em Spark e em SQL analítico puro no DuckDB mostra o que é essência do padrão e o que é sotaque da ferramenta.

@@ -1,107 +1,41 @@
-# Executor do pipeline — `run_pipeline.py`
+# SQL Server — três portas de execução
 
-Atalho para quem não quer abrir os scripts um a um. Executa a construção do modelo dimensional inteiro em um comando e termina imprimindo a contagem de linhas por tabela.
+Três scripts na raiz, cada um respondendo a uma pergunta diferente. Rode-os nesta ordem.
 
-Ele não substitui a leitura dos scripts — o conteúdo do projeto está no T-SQL. O caminho manual, arquivo por arquivo, está no [README principal](../README.md#executar-no-sql-server).
+| # | Arquivo | Pergunta que responde | Natureza |
+|---|---------|------------------------|----------|
+| 00 | `00_create_northwind_source.sql` | Já tenho o Northwind (fonte OLTP)? | Cria se não existir — seguro rodar de novo |
+| 01 | `01_setup.sql` | Já construí o banco `NorthwindDW`? | **Destrutivo** — começa com `DROP DATABASE NorthwindDW` |
+| 02 | `02_build_and_load.sql` | Rodar o pipeline inteiro | Idempotente — recria e recarrega a partir da fonte |
 
-## Requisitos
+`01_setup.sql` apaga o banco `NorthwindDW` antes de recriar. Se você guarda algo além do que os scripts deste projeto produzem nesse banco, ele se perde.
 
-```bash
-pip install pymssql
-```
+## Onde editar vs. o que é gerado
 
-Python 3.9+. Nenhuma outra dependência — o script é autocontido.
+`02_build_and_load.sql` é **gerado** — não edite à mão. Ele concatena os arquivos de `construcao/` (a fonte real) mais a sequência de `EXEC` que roda o pipeline de ponta a ponta.
 
-## Uso
-
-| Sua situação | Comando |
-|---|---|
-| Subiu o SQL Server deste projeto via Docker | `python sql_server/run_pipeline.py` |
-| SQL Server próprio | `python sql_server/run_pipeline.py --port 1433 --password SuaSenha` |
-| De dentro do Jupyter Lab do projeto | `python sql_server/run_pipeline.py` |
-
-No terceiro caso o comando funciona sem argumentos porque o `docker-compose.yml` já define `SQL_SERVER` e `SQL_PORT` apontando para o container do banco pela rede interna.
-
-### Conexão
-
-Precedência: **argumento > variável de ambiente > default**.
-
-| Argumento | Variável | Default |
-|---|---|---|
-| `--server` | `SQL_SERVER` | `localhost` |
-| `--port` | `SQL_PORT` | `1434` |
-| `--user` | `SQL_USER` | `sa` |
-| `--password` | `SQL_PASSWORD` | `YourPassword123` |
-
-O default `1434` é a porta publicada pelo container deste projeto — escolhida para não conflitar com uma instalação local de SQL Server, que costuma usar `1433`. Se o seu servidor é próprio, provavelmente você quer `--port 1433`.
-
-### Simular sem conectar
+Para mudar alguma procedure, edite o arquivo correspondente em `construcao/` e regenere (a partir da raiz do projeto):
 
 ```bash
-python sql_server/run_pipeline.py --dry-run
+.tools/gen_build_and_load.sh
 ```
 
-Lê e divide todos os scripts, imprime quantos lotes cada um tem, quais bancos são acessados e a sequência de execução — sem abrir conexão. Útil para conferir o plano, e para verificar qual destino as suas variáveis de ambiente estão produzindo antes de rodar de verdade.
-
-## O que ele executa
-
-**Construção** — cria estruturas e procedures, nesta ordem:
+## `construcao/`, `demonstracoes/`, `labs/`
 
 ```
-00_create_northwind_source.sql   01_setup.sql
-02_bronze_ingest.sql             03_gold_dims.sql
-04_gold_scd2.sql                 05_gold_fact_sales.sql
-06_gold_fact_fulfillment.sql     07_gold_fact_stock.sql
-10_bridge_table.sql              12_scd3.sql
-13_factless_fact.sql
+construcao/       10 arquivos — criam as procedures do modelo gold
+demonstracoes/    3 arquivos — exploram o que foi construído
+labs/             6 arquivos — versão comentada passo a passo de 02 a 07
 ```
 
-**Execução** — chama as procedures na ordem do pipeline:
+**A distinção que o repo não anuncia:** a maioria de `construcao/` (`02` a `07`, `10`, `12`, `13`) é `CREATE PROCEDURE` — rodar um desses arquivos isolado apenas *define* a procedure, não mostra resultado nenhum. `11_junk_dimension.sql` é o único arquivo de construção que executa direto (popula `DimOrderFlags` e atualiza `FactSales`) — por isso ele já está embutido em `02_build_and_load.sql`, na posição correta da sequência de execução, e não como uma chamada `EXEC` a mais.
 
-```
-bronze.sp_ingest_bronze
-gold.sp_process_dims
-gold.sp_process_customers_scd2
-gold.sp_process_products_scd2
-gold.sp_process_fact_sales
-gold.sp_process_fact_fulfillment
-gold.sp_process_fact_stock
-gold.sp_process_bridge_employee_territory
-11_junk_dimension.sql            ← arquivo inteiro, não procedure
-gold.sp_load_customer_scd3_initial
-gold.sp_process_customer_scd3
-gold.sp_process_factless_activity
-```
+Se você quer estudar um padrão e ver acontecer sem montar o pipeline inteiro, é isso que os `labs/` resolvem: mesma lógica de `02` a `07`, mas comentada por trecho e com as consultas intermediárias que mostram o antes e o depois.
 
-`11_junk_dimension.sql` aparece aqui, e não na construção, porque ele atualiza `FactSales` — precisa rodar depois que o fato existe. Executado antes, atualizaria zero linhas sem apresentar erro.
+## Por que os números não seguem a ordem de execução
 
-## O que ele não executa, de propósito
-
-```
-08_analytics.sql     09_validation.sql     14_role_playing.sql
-```
-
-São as demonstrações: existem para você abrir no SSMS e ler o resultado consulta a consulta. Automatizá-las produziria um despejo de saída sem valor — o ponto delas é a exploração interativa.
-
-Os arquivos `_lab.sql` também ficam de fora: são a versão comentada passo a passo de `02` a `07`, feitos para leitura e execução por trechos.
-
-## Comportamento
-
-- **Para no primeiro erro**, informando arquivo e número do lote. Um pipeline que segue depois de falhar no `01_setup.sql` produz uma cascata de erros ilegível.
-- **Trata `GO`** dividindo o script em lotes, como o SSMS faz — necessário porque `CREATE PROCEDURE` não pode dividir lote com outra instrução.
-- **Trata `USE <banco>`** reconectando ao banco indicado; os scripts alternam entre `master`, `Northwind` e `NorthwindDW`.
-- É **idempotente na prática**: rodar de novo recria as estruturas e recarrega os dados a partir da fonte.
-
-## Notas por sistema operacional
-
-**Windows** — se `python` não estiver no PATH, use `py -3`:
-
-```
-py -3 sql_server\run_pipeline.py
-```
-
-**Autenticação do Windows** — o executor faz login SQL (usuário e senha) via pymssql e não cobre autenticação integrada. Se é assim que você se conecta, use o caminho manual pelo SSMS descrito no README principal, que não tem essa limitação.
+A numeração é ordem de **estudo** (mesma numeração das trilhas Spark e DuckDB, para comparar o mesmo padrão nas três tecnologias), não ordem de **execução**. `11_junk_dimension.sql`, por exemplo, precisa rodar depois de `FactSales` existir — ou seja, depois dos passos que vêm numerados antes *e* depois dele. Rodado fora de ordem, ele não dá erro: atualiza zero linhas silenciosamente. É esse descompasso — número de arquivo por padrão didático vs. posição real na cadeia de dependências — que `02_build_and_load.sql` resolve, embutindo a ordem correta uma vez para sempre.
 
 ## Referência
 
-`run_pipeline.sql` documenta a mesma sequência em T-SQL puro, com comentários explicando cada etapa — leitura útil para entender o pipeline antes de executá-lo, ou para rodar tudo direto do SSMS sem Python.
+`demonstracoes/09_validation.sql` tem a checagem 16 (Junk Dimension), que é o teste real dessa ordenação: se `11_junk_dimension.sql` tivesse ficado na posição errada, ela é quem denuncia.

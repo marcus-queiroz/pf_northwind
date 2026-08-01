@@ -1,6 +1,6 @@
 -- ============================================================
 -- 09_validation.sql
--- 14 verificacoes de qualidade do NorthwindDW
+-- 24 verificacoes de qualidade do NorthwindDW
 -- Cada verificacao imprime resultado e esperado
 -- ============================================================
 
@@ -9,6 +9,36 @@ GO
 
 PRINT '=== VALIDACOES NorthwindDW ===';
 PRINT '';
+
+-- ============================================================
+-- 0.1 Fonte: dbo.Customers tem a contagem esperada
+-- ============================================================
+PRINT '-- 0.1. Fonte: dbo.Customers --';
+SELECT COUNT(*) AS Linhas FROM Northwind.dbo.Customers;
+-- Esperado: 91
+
+-- ============================================================
+-- 0.2 Fonte: dbo.Orders tem a contagem esperada
+-- ============================================================
+PRINT '-- 0.2. Fonte: dbo.Orders --';
+SELECT COUNT(*) AS Linhas FROM Northwind.dbo.Orders;
+-- Esperado: 830
+
+-- ============================================================
+-- 0.3 Fonte: dbo.[Order Details] tem a contagem esperada
+-- ============================================================
+PRINT '-- 0.3. Fonte: dbo.[Order Details] --';
+SELECT COUNT(*) AS Linhas FROM Northwind.dbo.[Order Details];
+-- Esperado: 2155
+
+-- ============================================================
+-- 0.4 Fonte: pedidos pendentes (sem ShippedDate)
+-- ============================================================
+PRINT '-- 0.4. Fonte: pedidos pendentes (sem ShippedDate) --';
+SELECT COUNT(*) AS PedidosPendentes
+FROM Northwind.dbo.Orders
+WHERE ShippedDate IS NULL;
+-- Esperado: 21
 
 -- ============================================================
 -- 1. Bronze = dbo: linhas identicas em todas as tabelas
