@@ -15,3 +15,7 @@ spark_sql/.ipynb_checkpoints/
 # Python
 __pycache__/
 *.pyc
+
+# Backups grandes e segredos locais
+*.bak
+.env

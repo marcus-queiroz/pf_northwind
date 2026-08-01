@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import duckdb
 import pandas as _pd
 
-DB_PATH = "/workspace/pf_northwind/duckdb/northwind_dw.duckdb"
-DATA_DIR = "/workspace/pf_northwind/duckdb/data"
+_BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = str(_BASE_DIR / "northwind_dw.duckdb")
+DATA_DIR = str(_BASE_DIR / "data")
 
 
 class _SafeProxy:

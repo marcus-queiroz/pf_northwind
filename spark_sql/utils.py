@@ -6,9 +6,11 @@ eliminando a duplicação presente nos notebooks 02–09.
 """
 import logging
 import os
+from pathlib import Path
+
 from pyspark.sql import SparkSession
 
-BASE_DIR      = "/workspace/pf_northwind/spark_sql"
+BASE_DIR      = str(Path(__file__).resolve().parent)
 WAREHOUSE_DIR = f"{BASE_DIR}/warehouse"
 METASTORE_DIR = f"{BASE_DIR}/metastore_db"
 DATA_DIR      = f"{BASE_DIR}/data"

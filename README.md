@@ -2,6 +2,77 @@
 
 Pipeline de engenharia de dados completo sobre o banco **Northwind** (Microsoft), implementado em três tecnologias: **SQL Server**, **Spark + Delta Lake** e **DuckDB**.
 
+## Como usar
+
+**Ler** (zero instalação) — os notebooks de Spark e DuckDB já renderizam no GitHub com os outputs das últimas execuções. Basta abrir qualquer notebook, sem clonar nem instalar nada.
+
+> **SQL Server:** os scripts T-SQL não produzem output salvo — para essa implementação é necessário um banco ativo. Veja as rotas abaixo.
+
+**Rodar no seu SQL Server** — se você já tem um SQL Server (2017+) disponível, um único comando executa o pipeline inteiro (setup, ingestão, dimensões, fatos, padrões avançados):
+
+```bash
+python sql_server/run_pipeline.py
+```
+
+Depois, abra no [SSMS](https://aka.ms/ssmsfullsetup) ou [Azure Data Studio](https://aka.ms/azuredatastudio) as três demonstrações — não fazem parte do runner porque são para exploração interativa, não construção:
+
+```
+sql_server/08_analytics.sql      ← 10 queries analíticas com framing de negócio
+sql_server/09_validation.sql     ← 20 verificações de integridade do modelo
+sql_server/14_role_playing.sql   ← Views role-playing + Degenerate Dimension
+```
+
+`sql_server/run_pipeline.sql` documenta a sequência de `EXEC` que o runner executa — leitura útil para quem quer entender o pipeline antes de rodar.
+
+**Rodar do zero** — para quem não tem um SQL Server à mão, o projeto disponibiliza um Docker com Jupyter Lab, Spark, DuckDB e SQL Server pré-configurados.
+
+```bash
+# Apenas Jupyter Lab com Spark + DuckDB:
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Acesse **http://localhost:8890** — Jupyter Lab já está no ar, sem senha.
+
+```bash
+# Subir também o SQL Server:
+docker compose -f docker/docker-compose.yml --profile sqlserver up -d
+```
+
+Aguarde ~30 s até o SQL Server inicializar, depois conecte pelo SSMS ou Azure Data Studio:
+
+| Campo | Valor |
+|-------|-------|
+| Servidor | `localhost,1434` |
+| Usuário | `sa` |
+| Senha | `YourPassword123` |
+
+<details>
+<summary>Parar / remover containers</summary>
+
+```bash
+# Apenas Spark + DuckDB:
+docker compose -f docker/docker-compose.yml down
+
+# Spark + DuckDB + SQL Server:
+docker compose -f docker/docker-compose.yml --profile sqlserver down
+
+# Remover também os dados do SQL Server:
+docker compose -f docker/docker-compose.yml --profile sqlserver down -v
+```
+
+</details>
+
+<details>
+<summary>Portas utilizadas</summary>
+
+| Porta | Serviço |
+|-------|---------|
+| 8890 | Jupyter Lab |
+| 4042 | Spark UI (durante jobs) |
+| 1434 | SQL Server (`--profile sqlserver`) |
+
+</details>
+
 ## Diferenciais
 
 | Padrão | Detalhe |
@@ -56,116 +127,7 @@ DimShipper  ─────────── FactSales
 
 ---
 
-## Como usar
-
-### Só quero avaliar o projeto
-
-Os notebooks de Spark e DuckDB já contêm os resultados das últimas execuções. Basta clonar o repositório e abrir qualquer notebook — nenhuma instalação necessária.
-
-> **SQL Server:** os scripts T-SQL não produzem output salvo — para essa implementação é necessário um banco ativo. Veja as seções abaixo.
-
----
-
-### Quero executar — Docker (recomendado)
-
-O projeto disponibiliza um Docker com Jupyter Lab, Spark e DuckDB pré-configurados. É a forma mais rápida de executar sem configurar nada manualmente.
-
-**Subir Jupyter Lab com Spark + DuckDB:**
-
-```bash
-docker compose -f docker/docker-compose.yml up -d
-```
-
-Acesse **http://localhost:8890** — Jupyter Lab já está no ar, sem senha.
-
-**Subir também o SQL Server:**
-
-```bash
-docker compose -f docker/docker-compose.yml --profile sqlserver up -d
-```
-
-Aguarde ~30 s até o SQL Server inicializar, depois conecte pelo SSMS ou Azure Data Studio:
-
-| Campo | Valor |
-|-------|-------|
-| Servidor | `localhost,1434` |
-| Usuário | `sa` |
-| Senha | `YourPassword123` |
-
-<details>
-<summary>Parar / remover containers</summary>
-
-```bash
-# Apenas Spark + DuckDB:
-docker compose -f docker/docker-compose.yml down
-
-# Spark + DuckDB + SQL Server:
-docker compose -f docker/docker-compose.yml --profile sqlserver down
-
-# Remover também os dados do SQL Server:
-docker compose -f docker/docker-compose.yml --profile sqlserver down -v
-```
-
-</details>
-
-<details>
-<summary>Portas utilizadas</summary>
-
-| Porta | Serviço |
-|-------|---------|
-| 8890 | Jupyter Lab |
-| 4042 | Spark UI (durante jobs) |
-| 1434 | SQL Server (`--profile sqlserver`) |
-
-</details>
-
----
-
-### Quero executar — SQL Server próprio
-
-Se você já tem um SQL Server (2017+) disponível, basta executar os scripts diretamente. Use [SSMS](https://aka.ms/ssmsfullsetup) ou [Azure Data Studio](https://aka.ms/azuredatastudio) (ambos gratuitos).
-
-Execute os scripts abaixo em ordem — cada um cria as estruturas e a procedure da sua etapa:
-
-```
-sql_server/00_create_northwind_source.sql  ← cria e popula o banco Northwind (fonte OLTP)
-sql_server/01_setup.sql                    ← cria o banco NorthwindDW com schemas e tabelas
-sql_server/02_bronze_ingest.sql            ← procedure bronze.sp_ingest_bronze
-sql_server/03_gold_dims.sql                ← procedure gold.sp_process_dims (SCD1 + DimDate)
-sql_server/04_gold_scd2.sql                ← procedures SCD2 DimCustomer + DimProduct
-sql_server/05_gold_fact_sales.sql          ← procedure gold.sp_process_fact_sales
-sql_server/06_gold_fact_fulfillment.sql    ← procedure gold.sp_process_fact_fulfillment
-sql_server/07_gold_fact_stock.sql          ← procedure gold.sp_process_fact_stock
-```
-
-Labs interativos — versões com contexto de ensino passo a passo:
-
-```
-sql_server/02_bronze_ingest_lab.sql            ← lab bronze.sp_ingest_bronze
-sql_server/03_gold_dims_lab.sql                ← lab gold.sp_process_dims
-sql_server/04_gold_scd2_lab.sql                ← lab SCD2 DimCustomer + DimProduct
-sql_server/05_gold_fact_sales_lab.sql          ← lab gold.sp_process_fact_sales
-sql_server/06_gold_fact_fulfillment_lab.sql    ← lab gold.sp_process_fact_fulfillment
-sql_server/07_gold_fact_stock_lab.sql          ← lab gold.sp_process_fact_stock
-```
-
-Com o pipeline core no ar, continue pelos padrões avançados e análises:
-
-```
-sql_server/08_analytics.sql              ← 10 queries analíticas com framing de negócio
-sql_server/09_validation.sql             ← 20 verificações de integridade do modelo
-sql_server/10_bridge_table.sql           ← BridgeEmployeeTerritory (M:N pattern)
-sql_server/11_junk_dimension.sql         ← DimOrderFlags + atualização FactSales
-sql_server/12_scd3.sql                   ← DimCustomerSCD3 + simulação sintética
-sql_server/13_factless_fact.sql          ← FactEmployeeTerritoryActivity (factless)
-sql_server/14_role_playing.sql           ← Views v_OrderDate/RequiredDate/ShippedDate + DD
-```
-
-**Visão macro do pipeline:** abra `sql_server/run_pipeline.sql` — ele mostra todos os `EXEC` em sequência e inclui queries demonstrativas do que foi construído.
-
----
-
-### Quero executar — ambiente local sem Docker
+### Ambiente local sem Docker
 
 Se preferir rodar sem Docker, configure o ambiente manualmente.
 
@@ -177,8 +139,6 @@ Não exige Java nem servidor. Apenas Python 3.9+:
 pip install duckdb==0.10.0 pandas jupyter
 jupyter notebook
 ```
-
-Edite `DB_PATH` e `DATA_DIR` em `duckdb/utils.py` para apontar para o diretório correto no seu ambiente.
 
 Pipeline core — cada notebook cria as estruturas da sua etapa:
 
@@ -229,8 +189,6 @@ Se não tiver: instale [OpenJDK 17](https://adoptium.net/) (Windows/Mac/Linux, g
 pip install pyspark==3.5.0 delta-spark==3.0.0 jupyter
 jupyter notebook
 ```
-
-Edite `BASE_DIR` em `spark_sql/utils.py` para apontar para o diretório correto no seu ambiente.
 
 Pipeline core — cada notebook cria as estruturas da sua etapa:
 
