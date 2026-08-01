@@ -54,7 +54,7 @@ Os notebooks de Spark e DuckDB estão versionados **com os outputs das últimas 
 
 Pré-requisito: um SQL Server 2017 ou superior e um cliente para rodar os scripts — [SSMS](https://aka.ms/ssmsfullsetup) ou [Azure Data Studio](https://aka.ms/azuredatastudio), ambos gratuitos. Se você não tem um SQL Server à mão, o projeto fornece um pronto via Docker (ver [Ambiente](#ambiente), no fim).
 
-Três portas na raiz de `sql_server/`, nesta ordem:
+Quatro portas na raiz de `sql_server/`. As três primeiras constroem, nesta ordem; a quarta desfaz:
 
 **1. `00_create_northwind_source.sql`** — cria e popula o banco Northwind (fonte OLTP). Seguro rodar de novo.
 
@@ -63,6 +63,8 @@ Três portas na raiz de `sql_server/`, nesta ordem:
 **3. `02_build_and_load.sql`** — roda o pipeline inteiro, do bronze ao gold, e termina com a contagem de linhas por tabela. Idempotente: rodar de novo recria e recarrega a partir da fonte. É gerado a partir de `sql_server/construcao/` — para mudar uma procedure, edite lá.
 
 **Explorar** — abra `sql_server/demonstracoes/08_analytics.sql`, `09_validation.sql` e `14_role_playing.sql` para ver o modelo respondendo perguntas de negócio e passando nas verificações de integridade.
+
+**4. `03_cleanup.sql`** — quer sair sem deixar rastro? Este script apaga o `Northwind` e o `NorthwindDW`. **Destrutivo e sem volta:** rodar de novo depois significa recomeçar do `00`.
 
 Por que os números de `construcao/` não seguem a ordem de execução do pipeline, a distinção entre arquivo que define procedure e arquivo que executa direto, e como regenerar `02_build_and_load.sql` — tudo isso está em **[`sql_server/README.md`](sql_server/README.md)**.
 

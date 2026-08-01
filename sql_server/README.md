@@ -1,14 +1,15 @@
-# SQL Server — três portas de execução
+# SQL Server — quatro portas de execução
 
-Três scripts na raiz, cada um respondendo a uma pergunta diferente. Rode-os nesta ordem.
+Quatro scripts na raiz, cada um respondendo a uma pergunta diferente. As três primeiras constroem, na ordem; a quarta desfaz.
 
 | # | Arquivo | Pergunta que responde | Natureza |
 |---|---------|------------------------|----------|
 | 00 | `00_create_northwind_source.sql` | Já tenho o Northwind (fonte OLTP)? | Cria se não existir — seguro rodar de novo |
 | 01 | `01_setup.sql` | Já construí o banco `NorthwindDW`? | **Destrutivo** — começa com `DROP DATABASE NorthwindDW` |
 | 02 | `02_build_and_load.sql` | Rodar o pipeline inteiro | Idempotente — recria e recarrega a partir da fonte |
+| 03 | `03_cleanup.sql` | Quero remover tudo? | **Destrutivo** — apaga `Northwind` e `NorthwindDW` |
 
-`01_setup.sql` apaga o banco `NorthwindDW` antes de recriar. Se você guarda algo além do que os scripts deste projeto produzem nesse banco, ele se perde.
+`01_setup.sql` apaga o banco `NorthwindDW` antes de recriar. Se você guarda algo além do que os scripts deste projeto produzem nesse banco, ele se perde. `03_cleanup.sql` vai além: também apaga o `Northwind` (a fonte OLTP), para quem quer sair do projeto sem deixar rastro no servidor. Rodar de novo depois de limpar significa recomeçar do `00`.
 
 ## Onde editar vs. o que é gerado
 
