@@ -908,6 +908,9 @@ GO
 -- Contexto: Employee <-> Territory e uma relacao M:N.
 -- STRING_AGG em DimEmployee e conveniente mas nao permite
 -- analise por territorio. A Bridge resolve isso corretamente.
+--
+-- So define a procedure. Execucao e exploracao:
+-- sql_server/labs/10_bridge_table_lab.sql
 -- =============================================================
 
 USE NorthwindDW;
@@ -937,63 +940,6 @@ BEGIN
 END;
 GO
 
-EXEC gold.sp_process_bridge_employee_territory;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 1: Receita por territorio (via bridge, nao via string)
--- Sem a bridge, essa query seria impossivel de forma limpa.
--- ---------------------------------------------------------------
-PRINT '-- DEMO 1: Receita por territorio via bridge --';
-SELECT
-    dt.RegionName,
-    dt.TerritoryDescription,
-    COUNT(DISTINCT fs.OrderID)          AS OrderCount,
-    SUM(fs.NetRevenue)                  AS TotalRevenue
-FROM gold.FactSales fs
-JOIN gold.DimEmployee              de ON de.EmployeeSK  = fs.EmployeeSK
-JOIN gold.BridgeEmployeeTerritory  b  ON b.EmployeeSK   = de.EmployeeSK
-JOIN gold.DimTerritory             dt ON dt.TerritorySK = b.TerritorySK
-GROUP BY dt.RegionName, dt.TerritoryDescription
-ORDER BY TotalRevenue DESC;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 2: Territorios com empregados atribuidos mas sem pedidos
--- "O que nao aconteceu?" — essa e a forca da bridge.
--- ---------------------------------------------------------------
-PRINT '-- DEMO 2: Territorios sem pedidos --';
-SELECT
-    dt.TerritoryDescription,
-    dt.RegionName,
-    de.FullName AS AssignedEmployee
-FROM gold.BridgeEmployeeTerritory  b
-JOIN gold.DimTerritory             dt ON dt.TerritorySK = b.TerritorySK
-JOIN gold.DimEmployee              de ON de.EmployeeSK  = b.EmployeeSK
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM gold.FactSales fs
-    WHERE fs.EmployeeSK = b.EmployeeSK
-)
-ORDER BY dt.RegionName, dt.TerritoryDescription;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 3: Empregado que cobre mais territorios distintos
--- ---------------------------------------------------------------
-PRINT '-- DEMO 3: Cobertura territorial por empregado --';
-SELECT
-    de.FullName,
-    COUNT(b.TerritorySK)   AS QuantidadeTerretorios,
-    STRING_AGG(dt.TerritoryDescription, ', ')
-        WITHIN GROUP (ORDER BY dt.TerritoryDescription)  AS Territorios
-FROM gold.BridgeEmployeeTerritory b
-JOIN gold.DimEmployee  de ON de.EmployeeSK  = b.EmployeeSK
-JOIN gold.DimTerritory dt ON dt.TerritorySK = b.TerritorySK
-GROUP BY de.FullName
-ORDER BY QuantidadeTerretorios DESC;
-GO
-
 -- ---- fonte: construcao/12_scd3.sql ----
 -- =============================================================
 -- 12_scd3.sql
@@ -1001,6 +947,10 @@ GO
 -- Tabela separada: DimCustomerSCD3 (nao altera DimCustomer SCD2)
 -- Contexto: guarda apenas a transicao mais recente de
 -- City e Country. Simples, mas apenas 1 versao historica.
+--
+-- So definem as procedures. Execucao e exploracao (com
+-- simulacao de mudanca de cidade/pais):
+-- sql_server/labs/12_scd3_lab.sql
 -- =============================================================
 
 USE NorthwindDW;
@@ -1023,9 +973,6 @@ BEGIN
 
     PRINT 'DimCustomerSCD3 carga inicial: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' clientes.';
 END;
-GO
-
-EXEC gold.sp_load_customer_scd3_initial;
 GO
 
 -- Passo 2: Procedure de atualizacao SCD3
@@ -1073,76 +1020,6 @@ BEGIN
 END;
 GO
 
--- ---------------------------------------------------------------
--- SIMULACAO: Atualizar 3 clientes no bronze para demonstrar SCD3
--- (dados sinteticos — Northwind e estatico)
--- ---------------------------------------------------------------
-PRINT '--- Estado ANTES ---';
-SELECT CustomerID, CurrentCity, PreviousCity, CityChangedOn
-FROM gold.DimCustomerSCD3
-WHERE CustomerID IN ('ALFKI', 'ANATR', 'BOLID');
-GO
-
-UPDATE bronze.Customers SET City = 'Lyon'     WHERE CustomerID = 'ALFKI';  -- era Berlin
-UPDATE bronze.Customers SET City = 'Madrid'   WHERE CustomerID = 'ANATR';  -- era Mexico D.F.
-UPDATE bronze.Customers SET City = 'Valencia' WHERE CustomerID = 'BOLID';  -- era Madrid
-GO
-
-EXEC gold.sp_process_customer_scd3;
-GO
-
-PRINT '--- Estado DEPOIS (historico limitado aplicado) ---';
-SELECT
-    CustomerID,
-    CurrentCity      AS CidadeAtual,
-    PreviousCity     AS CidadeAnterior,
-    CityChangedOn    AS DataMudanca
-FROM gold.DimCustomerSCD3
-WHERE CustomerID IN ('ALFKI', 'ANATR', 'BOLID');
-GO
-
--- Restaurar bronze para estado original
-UPDATE bronze.Customers SET City = 'Berlin'       WHERE CustomerID = 'ALFKI';
-UPDATE bronze.Customers SET City = 'M?xico D.F.'  WHERE CustomerID = 'ANATR';
-UPDATE bronze.Customers SET City = 'Madrid'        WHERE CustomerID = 'BOLID';
-GO
-
--- ---------------------------------------------------------------
--- DEMO: Clientes que mudaram de cidade/pais (apos simulacao)
--- ---------------------------------------------------------------
-PRINT '-- DEMO: Historico SCD3 --';
-SELECT
-    CustomerID,
-    CompanyName,
-    CurrentCity      AS CidadeAtual,
-    PreviousCity     AS CidadeAnterior,
-    CityChangedOn    AS MudouEm,
-    CurrentCountry,
-    PreviousCountry,
-    CountryChangedOn
-FROM gold.DimCustomerSCD3
-WHERE PreviousCity IS NOT NULL OR PreviousCountry IS NOT NULL
-ORDER BY CityChangedOn DESC;
-GO
-
--- Comparacao direta com SCD2:
--- SCD3: apenas 1 versao anterior, atualiza no mesmo registro
--- SCD2: historico completo, nova linha por mudanca
--- SCD1: sem historico, sobrescreve
-PRINT '-- DEMO: Comparacao SCD2 vs SCD3 --';
-SELECT TOP 5
-    s2.CustomerID,
-    s2.ContactName,
-    s2.City      AS CidadeSCD2_VersionAtual,
-    s2.ValidFrom,
-    s2.ValidTo,
-    s3.CurrentCity   AS CidadeSCD3_Atual,
-    s3.PreviousCity  AS CidadeSCD3_Anterior
-FROM gold.DimCustomer  s2
-JOIN gold.DimCustomerSCD3 s3 ON s3.CustomerID = s2.CustomerID
-WHERE s2.IsCurrent = 1;
-GO
-
 -- ---- fonte: construcao/13_factless_fact.sql ----
 -- =============================================================
 -- 13_factless_fact.sql
@@ -1151,8 +1028,12 @@ GO
 -- sem metricas: um empregado processou pedido(s) em um dia,
 -- estando associado a determinados territorios via bridge.
 -- Grain: (ActivityDateKey, EmployeeSK, TerritorySK) unico
+--
+-- So define a procedure. Execucao e exploracao:
+-- sql_server/labs/13_factless_fact_lab.sql
 -- =============================================================
--- DEPENDENCIA: 10_bridge_table.sql deve ter sido executado.
+-- DEPENDENCIA: a procedure de 10_bridge_table.sql precisa ja ter
+-- sido executada (gold.BridgeEmployeeTerritory populada).
 
 USE NorthwindDW;
 GO
@@ -1184,62 +1065,6 @@ BEGIN
 
     PRINT 'FactEmployeeTerritoryActivity: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' linhas inseridas.';
 END;
-GO
-
-EXEC gold.sp_process_factless_activity;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 1: Territorios nunca cobertos por seus empregados
--- (pedidos existem mas nunca foram processados por emp. do territorio)
--- ---------------------------------------------------------------
-PRINT '-- DEMO 1: Territorios sem cobertura real --';
-SELECT
-    dt.RegionName,
-    dt.TerritoryDescription,
-    de.FullName     AS EmpregadoResponsavel
-FROM gold.BridgeEmployeeTerritory  b
-JOIN gold.DimTerritory             dt ON dt.TerritorySK = b.TerritorySK
-JOIN gold.DimEmployee              de ON de.EmployeeSK  = b.EmployeeSK
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM gold.FactEmployeeTerritoryActivity fa
-    WHERE fa.EmployeeSK = b.EmployeeSK
-      AND fa.TerritorySK = b.TerritorySK
-)
-ORDER BY dt.RegionName;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 2: Dias ativos por empregado x territorio
--- ---------------------------------------------------------------
-PRINT '-- DEMO 2: Dias ativos por empregado e territorio --';
-SELECT
-    de.FullName,
-    dt.TerritoryDescription,
-    COUNT(*)  AS DiasComAtividade
-FROM gold.FactEmployeeTerritoryActivity fa
-JOIN gold.DimEmployee  de ON de.EmployeeSK  = fa.EmployeeSK
-JOIN gold.DimTerritory dt ON dt.TerritorySK = fa.TerritorySK
-GROUP BY de.FullName, dt.TerritoryDescription
-ORDER BY DiasComAtividade DESC;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 3: Cobertura territorial por ano (densidade de cobertura)
--- ---------------------------------------------------------------
-PRINT '-- DEMO 3: Cobertura territorial por ano --';
-SELECT
-    d.Year,
-    dt.RegionName,
-    COUNT(DISTINCT fa.TerritorySK)   AS TerritoriosCobertos,
-    COUNT(DISTINCT fa.EmployeeSK)    AS EmpregadosAtivos,
-    COUNT(*)                          AS TotalEventos
-FROM gold.FactEmployeeTerritoryActivity fa
-JOIN gold.DimDate                 d  ON d.DateKey     = fa.ActivityDateKey
-JOIN gold.DimTerritory            dt ON dt.TerritorySK = fa.TerritorySK
-GROUP BY d.Year, dt.RegionName
-ORDER BY d.Year, dt.RegionName;
 GO
 
 -- ============================================================
@@ -1301,6 +1126,9 @@ GO
 -- - IsHighValue: NetRevenue > 1000 (limiar de negocio)
 -- - ShipmentMode: mapeado deterministicamente por ShipperID
 --   (Northwind nao tem campo, mas o padrao e demonstrado)
+--
+-- Este arquivo ja executa (nao e so definicao de procedure).
+-- Exploracao: sql_server/labs/11_junk_dimension_lab.sql
 -- =============================================================
 
 USE NorthwindDW;
@@ -1375,38 +1203,6 @@ BEGIN
 
     PRINT 'Junk dimension atualizada: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' linhas.';
 END;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 1: Distribuicao de vendas por banda de desconto e modo de envio
--- ---------------------------------------------------------------
-PRINT '-- DEMO 1: Vendas por DiscountBand e ShipmentMode --';
-SELECT
-    dof.DiscountBand,
-    dof.ShipmentMode,
-    COUNT(*)               AS Transacoes,
-    SUM(fs.GrossRevenue)   AS GrossRevenue,
-    SUM(fs.NetRevenue)     AS NetRevenue,
-    SUM(fs.GrossRevenue) - SUM(fs.NetRevenue) AS DescontoTotal
-FROM gold.FactSales fs
-JOIN gold.DimOrderFlags dof ON dof.OrderFlagsSK = fs.OrderFlagsSK
-GROUP BY dof.DiscountBand, dof.ShipmentMode
-ORDER BY dof.DiscountBand, dof.ShipmentMode;
-GO
-
--- ---------------------------------------------------------------
--- DEMO 2: High-value orders por modo de envio
--- ---------------------------------------------------------------
-PRINT '-- DEMO 2: High-value orders por modo de envio --';
-SELECT
-    dof.ShipmentMode,
-    dof.IsHighValue,
-    COUNT(*)             AS Transacoes,
-    AVG(fs.NetRevenue)   AS TicketMedio
-FROM gold.FactSales fs
-JOIN gold.DimOrderFlags dof ON dof.OrderFlagsSK = fs.OrderFlagsSK
-GROUP BY dof.ShipmentMode, dof.IsHighValue
-ORDER BY dof.ShipmentMode, dof.IsHighValue DESC;
 GO
 
 -- DimCustomerSCD3 — carga inicial

@@ -4,6 +4,10 @@
 -- Tabela separada: DimCustomerSCD3 (nao altera DimCustomer SCD2)
 -- Contexto: guarda apenas a transicao mais recente de
 -- City e Country. Simples, mas apenas 1 versao historica.
+--
+-- So definem as procedures. Execucao e exploracao (com
+-- simulacao de mudanca de cidade/pais):
+-- sql_server/labs/12_scd3_lab.sql
 -- =============================================================
 
 USE NorthwindDW;
@@ -26,9 +30,6 @@ BEGIN
 
     PRINT 'DimCustomerSCD3 carga inicial: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' clientes.';
 END;
-GO
-
-EXEC gold.sp_load_customer_scd3_initial;
 GO
 
 -- Passo 2: Procedure de atualizacao SCD3
@@ -74,74 +75,4 @@ BEGIN
     PRINT 'SCD3: ' + CAST(@city_changes AS VARCHAR) + ' mudancas de cidade, '
         + CAST(@country_changes AS VARCHAR) + ' de pais.';
 END;
-GO
-
--- ---------------------------------------------------------------
--- SIMULACAO: Atualizar 3 clientes no bronze para demonstrar SCD3
--- (dados sinteticos — Northwind e estatico)
--- ---------------------------------------------------------------
-PRINT '--- Estado ANTES ---';
-SELECT CustomerID, CurrentCity, PreviousCity, CityChangedOn
-FROM gold.DimCustomerSCD3
-WHERE CustomerID IN ('ALFKI', 'ANATR', 'BOLID');
-GO
-
-UPDATE bronze.Customers SET City = 'Lyon'     WHERE CustomerID = 'ALFKI';  -- era Berlin
-UPDATE bronze.Customers SET City = 'Madrid'   WHERE CustomerID = 'ANATR';  -- era Mexico D.F.
-UPDATE bronze.Customers SET City = 'Valencia' WHERE CustomerID = 'BOLID';  -- era Madrid
-GO
-
-EXEC gold.sp_process_customer_scd3;
-GO
-
-PRINT '--- Estado DEPOIS (historico limitado aplicado) ---';
-SELECT
-    CustomerID,
-    CurrentCity      AS CidadeAtual,
-    PreviousCity     AS CidadeAnterior,
-    CityChangedOn    AS DataMudanca
-FROM gold.DimCustomerSCD3
-WHERE CustomerID IN ('ALFKI', 'ANATR', 'BOLID');
-GO
-
--- Restaurar bronze para estado original
-UPDATE bronze.Customers SET City = 'Berlin'       WHERE CustomerID = 'ALFKI';
-UPDATE bronze.Customers SET City = 'M?xico D.F.'  WHERE CustomerID = 'ANATR';
-UPDATE bronze.Customers SET City = 'Madrid'        WHERE CustomerID = 'BOLID';
-GO
-
--- ---------------------------------------------------------------
--- DEMO: Clientes que mudaram de cidade/pais (apos simulacao)
--- ---------------------------------------------------------------
-PRINT '-- DEMO: Historico SCD3 --';
-SELECT
-    CustomerID,
-    CompanyName,
-    CurrentCity      AS CidadeAtual,
-    PreviousCity     AS CidadeAnterior,
-    CityChangedOn    AS MudouEm,
-    CurrentCountry,
-    PreviousCountry,
-    CountryChangedOn
-FROM gold.DimCustomerSCD3
-WHERE PreviousCity IS NOT NULL OR PreviousCountry IS NOT NULL
-ORDER BY CityChangedOn DESC;
-GO
-
--- Comparacao direta com SCD2:
--- SCD3: apenas 1 versao anterior, atualiza no mesmo registro
--- SCD2: historico completo, nova linha por mudanca
--- SCD1: sem historico, sobrescreve
-PRINT '-- DEMO: Comparacao SCD2 vs SCD3 --';
-SELECT TOP 5
-    s2.CustomerID,
-    s2.ContactName,
-    s2.City      AS CidadeSCD2_VersionAtual,
-    s2.ValidFrom,
-    s2.ValidTo,
-    s3.CurrentCity   AS CidadeSCD3_Atual,
-    s3.PreviousCity  AS CidadeSCD3_Anterior
-FROM gold.DimCustomer  s2
-JOIN gold.DimCustomerSCD3 s3 ON s3.CustomerID = s2.CustomerID
-WHERE s2.IsCurrent = 1;
 GO

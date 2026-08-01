@@ -39,11 +39,13 @@ Os notebooks de **Spark** e **DuckDB** estão versionados **com os outputs das �
 14_role_playing.sql             views role-playing + degenerate dimension
 ```
 
-**`labs/`** — versões didáticas de `02` a `07`, com o passo a passo comentado e as consultas intermediárias que mostram o antes e o depois de cada transformação:
+**`labs/`** — um arquivo por padrão de `construcao/`, com o `EXEC` e as consultas que mostram o antes e o depois de cada transformação:
 
 ```
-02_bronze_ingest_lab.sql   03_gold_dims_lab.sql   04_gold_scd2_lab.sql
+02_bronze_ingest_lab.sql   03_gold_dims_lab.sql       04_gold_scd2_lab.sql
 05_gold_fact_sales_lab.sql 06_gold_fact_fulfillment_lab.sql 07_gold_fact_stock_lab.sql
+10_bridge_table_lab.sql    11_junk_dimension_lab.sql  12_scd3_lab.sql
+13_factless_fact_lab.sql
 ```
 
 **Trilhas Spark e DuckDB** (`spark_sql/`, `duckdb/`) — os mesmos passos em notebooks, com a mesma numeração e os outputs salvos.
