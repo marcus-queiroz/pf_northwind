@@ -11,17 +11,7 @@ Quatro scripts na raiz, cada um respondendo a uma pergunta diferente. As três p
 
 `01_setup.sql` apaga o banco `NorthwindDW` antes de recriar. Se você guarda algo além do que os scripts deste projeto produzem nesse banco, ele se perde. `03_cleanup.sql` vai além: também apaga o `Northwind` (a fonte OLTP), para quem quer sair do projeto sem deixar rastro no servidor. Rodar de novo depois de limpar significa recomeçar do `00`.
 
-## Onde editar vs. o que é gerado
-
-`02_build_and_load.sql` é **gerado** — não edite à mão. Ele concatena os arquivos de `construcao/` (a fonte real) mais a sequência de `EXEC` que roda o pipeline de ponta a ponta.
-
-Para mudar alguma procedure, edite o arquivo correspondente em `construcao/` e regenere (a partir da raiz do projeto):
-
-```bash
-.tools/gen_build_and_load.sh
-```
-
-`02_build_and_load.sql` só constrói: define as procedures, executa cada uma uma vez, na ordem certa, e termina na contagem de linhas por tabela. Nenhuma consulta de demonstração roda no meio do caminho — isso é o que os `labs/` e as `demonstracoes/` são para.
+`02_build_and_load.sql` concatena os arquivos de `construcao/` mais a sequência de `EXEC` que roda o pipeline de ponta a ponta. Ele só constrói: define as procedures, executa cada uma uma vez, na ordem certa, e termina na contagem de linhas por tabela. Nenhuma consulta de demonstração roda no meio do caminho — isso é o que os `labs/` e as `demonstracoes/` são para.
 
 ## `construcao/`, `demonstracoes/`, `labs/`
 

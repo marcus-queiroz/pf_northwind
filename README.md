@@ -68,7 +68,7 @@ Quatro portas na raiz de `sql_server/`. As três primeiras constroem, nesta orde
 
 **4. `03_cleanup.sql`** — quer sair sem deixar rastro? Este script apaga o `Northwind` e o `NorthwindDW`. **Destrutivo e sem volta:** rodar de novo depois significa recomeçar do `00`.
 
-Por que os números de `construcao/` não seguem a ordem de execução do pipeline, a distinção entre arquivo que define procedure e arquivo que executa direto, e como regenerar `02_build_and_load.sql` — tudo isso está em **[`sql_server/README.md`](sql_server/README.md)**.
+Por que os números de `construcao/` não seguem a ordem de execução do pipeline e a distinção entre arquivo que define procedure e arquivo que executa direto — tudo isso está em **[`sql_server/README.md`](sql_server/README.md)**.
 
 ---
 
