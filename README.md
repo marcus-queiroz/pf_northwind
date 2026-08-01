@@ -2,11 +2,11 @@
 
 Os principais padrões de modelagem dimensional implementados três vezes — em **SQL Server**, **Spark + Delta Lake** e **DuckDB** — sobre a mesma base Northwind, com a mesma numeração de arquivos nas três trilhas. Serve tanto como pipeline completo quanto como referência de consulta: para ver como um Accumulating Snapshot fica em cada tecnologia, basta abrir o arquivo `06` das três pastas.
 
-Os notebooks de Spark e DuckDB estão versionados **com os outputs das últimas execuções** — dá para avaliar o projeto inteiro lendo no GitHub, sem clonar e sem instalar nada.
+Os notebooks de **Spark** e **DuckDB** estão versionados **com os outputs das últimas execuções** — dá para avaliar o projeto inteiro lendo no GitHub, sem clonar e sem instalar nada.
 
 ---
 
-## O que está entregue
+## Executando em SQL Server
 
 **Trilha SQL Server** (`sql_server/`) — T-SQL nativo, do banco fonte ao modelo dimensional, em três portas na raiz:
 
